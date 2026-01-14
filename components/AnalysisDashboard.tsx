@@ -10,7 +10,9 @@ import {
   Briefcase, 
   TrendingUp, 
   FileText,
-  DollarSign
+  DollarSign,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import {
   BarChart,
@@ -44,6 +46,7 @@ const formatDate = (dateString: string | null) => {
 
 const AnalysisDashboard: React.FC<Props> = ({ data, onReset }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'eligibility' | 'history' | 'wages'>('overview');
+  const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const { cnisAnalysis, cnisData } = data;
 
   // Extract retirement rules from the flat object
@@ -307,6 +310,7 @@ const AnalysisDashboard: React.FC<Props> = ({ data, onReset }) => {
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                             <tr>
+                                <th scope="col" className="px-2 py-3 w-10"></th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Seq</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Empresa / Origem</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Período</th>
@@ -316,45 +320,180 @@ const AnalysisDashboard: React.FC<Props> = ({ data, onReset }) => {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                            {cnisAnalysis.consolidadoResumido.map((item) => (
-                                <tr key={item.seq} className={item.isPendencia ? 'bg-amber-50/30' : ''}>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.seq}</td>
-                                    <td className="px-6 py-4 text-sm text-gray-900 font-medium">
-                                        <div className="flex flex-col">
-                                            <span>{item.origem}</span>
-                                            <span className="text-xs text-gray-500 font-normal">{item.tipo}</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {formatDate(item.contributionTime.data.dataInicio)} - {item.contributionTime.data.dataFim ? formatDate(item.contributionTime.data.dataFim) : 'Atual'}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        {item.validContributionTime.abreviado}
-                                    </td>
-                                    <td className="px-6 py-4 text-sm text-gray-500">
-                                        {item.indicadores ? (
-                                            <div className="flex flex-wrap gap-1">
-                                                {item.indicadores.split('-').map((ind, i) => (
-                                                    <span key={i} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
-                                                        {ind}
+                            {cnisAnalysis.consolidadoResumido.map((item) => {
+                                const isExpanded = expandedRow === item.seq;
+                                const relationDetails = cnisData.socialSecurityRelations.find(
+                                    rel => rel.socialSecurityAffiliationInfo.seq === item.seq
+                                );
+                                
+                                return (
+                                    <React.Fragment key={item.seq}>
+                                        <tr 
+                                            className={`cursor-pointer hover:bg-gray-50 transition-colors ${item.isPendencia ? 'bg-amber-50/30' : ''}`}
+                                            onClick={() => setExpandedRow(isExpanded ? null : item.seq)}
+                                        >
+                                            <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {isExpanded ? (
+                                                    <ChevronDown size={16} className="text-blue-600" />
+                                                ) : (
+                                                    <ChevronRight size={16} className="text-gray-400" />
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.seq}</td>
+                                            <td className="px-6 py-4 text-sm text-gray-900 font-medium">
+                                                <div className="flex flex-col">
+                                                    <span>{item.origem}</span>
+                                                    <span className="text-xs text-gray-500 font-normal">{item.tipo}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {formatDate(item.contributionTime.data.dataInicio)} - {item.contributionTime.data.dataFim ? formatDate(item.contributionTime.data.dataFim) : 'Atual'}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                {item.validContributionTime.abreviado}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-gray-500">
+                                                {item.indicadores ? (
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {item.indicadores.split('-').map((ind, i) => (
+                                                            <span key={i} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
+                                                                {ind}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                ) : '-'}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-center">
+                                                {item.isPendencia ? (
+                                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                                                        <AlertTriangle size={12} /> Pendência
                                                     </span>
-                                                ))}
-                                            </div>
-                                        ) : '-'}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                                        {item.isPendencia ? (
-                                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                                                <AlertTriangle size={12} /> Pendência
-                                            </span>
-                                        ) : (
-                                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                <CheckCircle size={12} /> Ok
-                                            </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                        <CheckCircle size={12} /> Ok
+                                                    </span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                        
+                                        {isExpanded && relationDetails && (
+                                            <tr>
+                                                <td colSpan={7} className="px-8 py-6 bg-gray-50">
+                                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                                        {/* Informações do Vínculo */}
+                                                        <div className="bg-white rounded-lg border border-gray-200 p-4">
+                                                            <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                                                <Briefcase size={16} className="text-blue-600" />
+                                                                Informações do Vínculo
+                                                            </h4>
+                                                            <div className="space-y-2 text-sm">
+                                                                <div className="flex justify-between">
+                                                                    <span className="text-gray-600">Origem:</span>
+                                                                    <span className="text-gray-900 font-medium">{relationDetails.socialSecurityAffiliationInfo.origemDoVinculo}</span>
+                                                                </div>
+                                                                <div className="flex justify-between">
+                                                                    <span className="text-gray-600">Data Início:</span>
+                                                                    <span className="text-gray-900 font-medium">{formatDate(relationDetails.socialSecurityAffiliationInfo.dataInicio)}</span>
+                                                                </div>
+                                                                <div className="flex justify-between">
+                                                                    <span className="text-gray-600">Data Fim:</span>
+                                                                    <span className="text-gray-900 font-medium">{relationDetails.socialSecurityAffiliationInfo.dataFim ? formatDate(relationDetails.socialSecurityAffiliationInfo.dataFim) : 'Em andamento'}</span>
+                                                                </div>
+                                                                <div className="flex justify-between">
+                                                                    <span className="text-gray-600">Tempo Total:</span>
+                                                                    <span className="text-gray-900 font-medium">{item.contributionTime.abreviado}</span>
+                                                                </div>
+                                                                <div className="flex justify-between">
+                                                                    <span className="text-gray-600">Tempo Válido:</span>
+                                                                    <span className="text-green-600 font-medium">{item.validContributionTime.abreviado}</span>
+                                                                </div>
+                                                                <div className="flex justify-between">
+                                                                    <span className="text-gray-600">Carência:</span>
+                                                                    <span className="text-gray-900 font-medium">{item.carencia} meses</span>
+                                                                </div>
+                                                                {relationDetails.socialSecurityAffiliationInfo.indicadores && (
+                                                                    <div className="pt-2 border-t border-gray-200">
+                                                                        <span className="text-gray-600 text-xs">Indicadores:</span>
+                                                                        <div className="flex flex-wrap gap-1 mt-1">
+                                                                            {relationDetails.socialSecurityAffiliationInfo.indicadores.split('-').map((ind, i) => (
+                                                                                <span key={i} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                                                                                    {ind}
+                                                                                </span>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Histórico de Remunerações */}
+                                                        <div className="bg-white rounded-lg border border-gray-200 p-4">
+                                                            <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                                                <DollarSign size={16} className="text-green-600" />
+                                                                Histórico de Remunerações
+                                                            </h4>
+                                                            {relationDetails.socialSecurityAffiliationEarningsHistory.length > 0 ? (
+                                                                <div className="max-h-64 overflow-y-auto">
+                                                                    <table className="min-w-full text-sm">
+                                                                        <thead className="bg-gray-50 sticky top-0">
+                                                                            <tr>
+                                                                                <th className="px-2 py-2 text-left text-xs font-medium text-gray-500">Competência</th>
+                                                                                <th className="px-2 py-2 text-right text-xs font-medium text-gray-500">Valor</th>
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody className="divide-y divide-gray-100">
+                                                                            {relationDetails.socialSecurityAffiliationEarningsHistory.slice(-12).reverse().map((earning, idx) => (
+                                                                                <tr key={idx}>
+                                                                                    <td className="px-2 py-2 text-gray-600">
+                                                                                        {new Date(earning.competencia).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })}
+                                                                                    </td>
+                                                                                    <td className="px-2 py-2 text-right text-gray-900 font-medium">
+                                                                                        {formatCurrency(earning.remuneracao)}
+                                                                                    </td>
+                                                                                </tr>
+                                                                            ))}
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                            ) : (
+                                                                <p className="text-sm text-gray-500 italic">Sem histórico de remunerações registrado</p>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Pendências (se houver) */}
+                                                        {item.isPendencia && (
+                                                            <div className="lg:col-span-2 bg-amber-50 rounded-lg border border-amber-200 p-4">
+                                                                <h4 className="font-semibold text-amber-900 mb-2 flex items-center gap-2">
+                                                                    <AlertTriangle size={16} className="text-amber-600" />
+                                                                    Pendências Identificadas
+                                                                </h4>
+                                                                <div className="text-sm text-amber-800">
+                                                                    <p className="mb-2">Este vínculo possui pendências que podem afetar o cômputo do tempo de contribuição.</p>
+                                                                    {item.indicadores && (
+                                                                        <div className="mt-2">
+                                                                            <span className="font-medium">Indicadores de alerta:</span>
+                                                                            <div className="flex flex-wrap gap-1 mt-1">
+                                                                                {item.indicadores.split('-').map((ind, i) => (
+                                                                                    <span key={i} className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-200 text-amber-900 border border-amber-300">
+                                                                                        {ind}
+                                                                                    </span>
+                                                                                ))}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                    <p className="mt-3 text-xs text-amber-700">
+                                                                        ⚠️ Recomenda-se verificar a documentação deste vínculo e regularizar possíveis inconsistências junto ao empregador ou INSS.
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
                                         )}
-                                    </td>
-                                </tr>
-                            ))}
+                                    </React.Fragment>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>
