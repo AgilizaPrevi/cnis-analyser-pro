@@ -1,0 +1,5 @@
+{
+  "name": "CNIS Analyser Pro",
+  "description": "A professional dashboard to analyze INSS CNIS data, visualizing contribution history, retirement eligibility, and identifying pendencies.",
+  "requestFramePermissions": []
+}
