@@ -21,8 +21,32 @@ function App() {
     clientType: 'empregado_urbano'
   });
 
+  // Formata telefone: 5515997752074 -> +55 (15) 99775-2074
+  const formatPhoneNumber = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length === 0) return '';
+    if (numbers.length <= 2) return `+${numbers}`;
+    if (numbers.length <= 4) return `+${numbers.slice(0, 2)} (${numbers.slice(2)}`;
+    if (numbers.length <= 9) return `+${numbers.slice(0, 2)} (${numbers.slice(2, 4)}) ${numbers.slice(4)}`;
+    if (numbers.length <= 13) {
+      return `+${numbers.slice(0, 2)} (${numbers.slice(2, 4)}) ${numbers.slice(4, 9)}-${numbers.slice(9)}`;
+    }
+    return `+${numbers.slice(0, 2)} (${numbers.slice(2, 4)}) ${numbers.slice(4, 9)}-${numbers.slice(9, 13)}`;
+  };
+
+  // Remove máscara do telefone
+  const cleanPhoneNumber = (value: string) => {
+    return value.replace(/\D/g, '');
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    if (name === 'phoneNumber') {
+      const cleaned = cleanPhoneNumber(value);
+      setForm({ ...form, [name]: cleaned });
+    } else {
+      setForm({ ...form, [name]: value });
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -172,10 +196,10 @@ function App() {
                     <input 
                         type="tel" 
                         name="phoneNumber" 
-                        value={form.phoneNumber} 
+                        value={formatPhoneNumber(form.phoneNumber)} 
                         onChange={handleInputChange}
                         className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                        placeholder="(11) 99999-9999"
+                        placeholder="+55 (15) 99999-9999"
                         required
                     />
                 </div>

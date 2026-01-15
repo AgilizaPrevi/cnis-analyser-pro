@@ -43,7 +43,12 @@ const formatDate = (dateString: string | null) => {
   if (!dateString) return '-';
   return new Date(dateString).toLocaleDateString('pt-BR');
 };
-
+const formatDaysToTime = (days: number) => {
+  const anos = Math.floor(days / 365);
+  const meses = Math.floor((days % 365) / 30);
+  const diasRestantes = Math.floor((days % 365) % 30);
+  return `${anos}a ${meses}m ${diasRestantes}d`;
+};
 const AnalysisDashboard: React.FC<Props> = ({ data, onReset }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'eligibility' | 'history' | 'wages'>('overview');
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
@@ -128,7 +133,7 @@ const AnalysisDashboard: React.FC<Props> = ({ data, onReset }) => {
                     <div className="text-emerald-600 text-sm font-semibold mb-1 flex items-center gap-1">
                         <Clock size={16} /> Tempo Contrib.
                     </div>
-                    <div className="text-2xl font-bold text-gray-900">{cnisAnalysis.consolidadoResumido[0]?.contributionTime.abreviado || '0d'}</div>
+                    <div className="text-2xl font-bold text-gray-900">{formatDaysToTime(cnisAnalysis.duracaoTotalEmDias)}</div>
                     <div className="text-xs text-gray-500">Total líquido</div>
                 </div>
                 <div className="bg-amber-50 p-4 rounded-xl border border-amber-100">

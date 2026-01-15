@@ -30,7 +30,8 @@ export const analyzeCnis = async (payload: AnalysisPayload): Promise<CnisRespons
 
   formData.append('json', jsonMetadata);
 
-  const response = await fetch('https://agiliza.qa.epiousion.tech/api/customer/analysis-tool/cnis-fast-analysis/analyze', {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://agiliza.qa.epiousion.tech/api/customer/analysis-tool/cnis-fast-analysis';
+  const response = await fetch(`${apiBaseUrl}/analyze`, {
     method: 'POST',
     headers: {
       'accept': 'application/json',
