@@ -1,0 +1,81 @@
+name: CI/CD
+
+on:
+  push:
+    branches: ['main']
+  workflow_dispatch:
+
+env:
+  WORKING_DIRECTORY: /home/worker/workspace/agiliza-previ/cnis-analyser-pro
+  ACTION_ENV: prd
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📦 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🏷️ Extract App Version
+        id: extract_version
+        run: echo "APP_VERSION=$(jq -r .version package.json)" >> $GITHUB_ENV
+
+      - name: ⚙️ Configure Docker for Insecure Registry
+        run: |
+          REGISTRY_HOST=$(echo "${{ vars.REGISTRY_URL }}" | cut -d/ -f1)
+          echo "{ \"insecure-registries\": [\"$REGISTRY_HOST\"] }" | sudo tee /etc/docker/daemon.json
+          sudo systemctl restart docker
+
+      - name: 🔐 Docker Login to Registry
+        run: |
+          echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login $(echo "${{ vars.REGISTRY_URL }}" | cut -d/ -f1) -u ${{ secrets.REGISTRY_USER }} --password-stdin
+
+      - name: ⚙️ Update Container Environment Variables
+        run: |
+          mv .env.${{ env.ACTION_ENV }} .env
+
+      - name: 🐳 Build and Push Docker Image
+        run: |
+          docker build --no-cache -t ${{ vars.REGISTRY_URL }}:${{ env.APP_VERSION }} .
+          docker push ${{ vars.REGISTRY_URL }}:${{ env.APP_VERSION }}
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📦 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🏷️ Extract App Version
+        run: echo "APP_VERSION=$(jq -r .version package.json)" >> $GITHUB_ENV
+
+      - name: 📥 SSH - Pull and Tag Docker Image
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.PRD_SSH_HOST }}
+          username: ${{ secrets.PRD_SSH_USER }}
+          key: ${{ secrets.PRD_SSH_PRIVATE_KEY }}
+          script: |
+            echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login $(echo "${{ vars.REGISTRY_URL }}" | cut -d/ -f1) -u ${{ secrets.REGISTRY_USER }} --password-stdin
+            docker pull ${{ vars.REGISTRY_URL }}:${{ env.APP_VERSION }}
+            docker tag ${{ vars.REGISTRY_URL }}:${{ env.APP_VERSION }} ${{ vars.REGISTRY_URL }}:latest
+
+      - name: 🛑 SSH - Stop Old Docker Container
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.PRD_SSH_HOST }}
+          username: ${{ secrets.PRD_SSH_USER }}
+          key: ${{ secrets.PRD_SSH_PRIVATE_KEY }}
+          script: |
+            cd ${{ env.WORKING_DIRECTORY }}
+            bash ${{ env.WORKING_DIRECTORY }}/remove.container.sh
+
+      - name: 🚀 SSH - Start New Docker Container
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.PRD_SSH_HOST }}
+          username: ${{ secrets.PRD_SSH_USER }}
+          key: ${{ secrets.PRD_SSH_PRIVATE_KEY }}
+          script: |
+            cd ${{ env.WORKING_DIRECTORY }}
+            bash ${{ env.WORKING_DIRECTORY }}/start.container.sh
