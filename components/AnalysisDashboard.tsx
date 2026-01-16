@@ -31,12 +31,16 @@ interface Props {
   onReset: () => void;
 }
 
-const formatCurrency = (val: string) => {
-  if (!val) return 'R$ 0,00';
-  // Check if it already has currency symbol or needs parsing
-  const num = parseFloat(val.replace('.', '').replace(',', '.'));
-  if (isNaN(num)) return val;
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(num);
+const formatCurrency = (val: string | null | undefined) => {
+  if (!val || val === '' || val === null || val === undefined) return 'R$ 0,00';
+  try {
+    // Check if it already has currency symbol or needs parsing
+    const num = parseFloat(val.toString().replace('.', '').replace(',', '.'));
+    if (isNaN(num)) return 'R$ 0,00';
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(num);
+  } catch (e) {
+    return 'R$ 0,00';
+  }
 };
 
 const formatDate = (dateString: string | null) => {
@@ -73,15 +77,21 @@ const AnalysisDashboard: React.FC<Props> = ({ data, onReset }) => {
   // Flatten wages for chart
   const wageData = useMemo(() => {
     const points: { date: string; value: number; label: string }[] = [];
-    cnisData.socialSecurityRelations.forEach(rel => {
-      rel.socialSecurityAffiliationEarningsHistory.forEach(earn => {
-        const val = parseFloat(earn.remuneracao.replace('.', '').replace(',', '.'));
-        if (!isNaN(val)) {
-            points.push({
-                date: earn.competencia,
-                label: new Date(earn.competencia).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
-                value: val
-            });
+    cnisData.socialSecurityRelations?.forEach(rel => {
+      rel.socialSecurityAffiliationEarningsHistory?.forEach(earn => {
+        if (earn.remuneracao && earn.competencia) {
+          try {
+            const val = parseFloat(earn.remuneracao.toString().replace('.', '').replace(',', '.'));
+            if (!isNaN(val)) {
+                points.push({
+                    date: earn.competencia,
+                    label: new Date(earn.competencia).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
+                    value: val
+                });
+            }
+          } catch (e) {
+            console.warn('Error parsing wage data:', e);
+          }
         }
       });
     });
@@ -358,9 +368,9 @@ const AnalysisDashboard: React.FC<Props> = ({ data, onReset }) => {
                                                 {item.validContributionTime.abreviado}
                                             </td>
                                             <td className="px-6 py-4 text-sm text-gray-500">
-                                                {item.indicadores ? (
+                                                {item.indicadores && typeof item.indicadores === 'string' && item.indicadores.length > 0 ? (
                                                     <div className="flex flex-wrap gap-1">
-                                                        {item.indicadores.split('-').map((ind, i) => (
+                                                        {item.indicadores.split('-').filter(ind => ind && ind.trim()).map((ind, i) => (
                                                             <span key={i} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
                                                                 {ind}
                                                             </span>
@@ -416,11 +426,11 @@ const AnalysisDashboard: React.FC<Props> = ({ data, onReset }) => {
                                                                     <span className="text-gray-600">Carência:</span>
                                                                     <span className="text-gray-900 font-medium">{item.carencia} meses</span>
                                                                 </div>
-                                                                {relationDetails.socialSecurityAffiliationInfo.indicadores && (
+                                                                {relationDetails.socialSecurityAffiliationInfo.indicadores && typeof relationDetails.socialSecurityAffiliationInfo.indicadores === 'string' && relationDetails.socialSecurityAffiliationInfo.indicadores.length > 0 && (
                                                                     <div className="pt-2 border-t border-gray-200">
                                                                         <span className="text-gray-600 text-xs">Indicadores:</span>
                                                                         <div className="flex flex-wrap gap-1 mt-1">
-                                                                            {relationDetails.socialSecurityAffiliationInfo.indicadores.split('-').map((ind, i) => (
+                                                                            {relationDetails.socialSecurityAffiliationInfo.indicadores.split('-').filter(ind => ind && ind.trim()).map((ind, i) => (
                                                                                 <span key={i} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
                                                                                     {ind}
                                                                                 </span>
@@ -474,11 +484,11 @@ const AnalysisDashboard: React.FC<Props> = ({ data, onReset }) => {
                                                                 </h4>
                                                                 <div className="text-sm text-amber-800">
                                                                     <p className="mb-2">Este vínculo possui pendências que podem afetar o cômputo do tempo de contribuição.</p>
-                                                                    {item.indicadores && (
+                                                                    {item.indicadores && typeof item.indicadores === 'string' && item.indicadores.length > 0 && (
                                                                         <div className="mt-2">
                                                                             <span className="font-medium">Indicadores de alerta:</span>
                                                                             <div className="flex flex-wrap gap-1 mt-1">
-                                                                                {item.indicadores.split('-').map((ind, i) => (
+                                                                                {item.indicadores.split('-').filter(ind => ind && ind.trim()).map((ind, i) => (
                                                                                     <span key={i} className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-200 text-amber-900 border border-amber-300">
                                                                                         {ind}
                                                                                     </span>

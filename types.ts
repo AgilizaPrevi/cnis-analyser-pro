@@ -48,7 +48,7 @@ export interface ContributionTimeEntry {
 
 export interface ConsolidatedEntry {
   seq: number;
-  indicadores: string;
+  indicadores?: string;
   isPendencia: boolean;
   origem: string;
   contributionTime: {
@@ -101,6 +101,6 @@ export interface SocialSecurityRelation {
 
 export interface EarningHistory {
   competencia: string;
-  remuneracao: string;
+  remuneracao?: string;
   indicadores?: string;
 }
