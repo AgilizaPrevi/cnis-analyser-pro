@@ -19,8 +19,8 @@ RUN rm /etc/nginx/conf.d/default.conf
 # Copy custom nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Copy built files
-COPY --from=build /build/dist /usr/share/nginx/html/
+# Copy built files to the correct path
+COPY --from=build /build/dist /usr/share/nginx/html/cnis-analyser-pro/
 
 # Create non-root user
 RUN addgroup -g 101 -S nginx && \
